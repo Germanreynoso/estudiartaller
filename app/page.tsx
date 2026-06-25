@@ -1,0 +1,225 @@
+"use client";
+
+import Link from "next/link";
+import { MODULES } from "@/lib/curriculum/modules";
+import { TOPICS, topicsByModule } from "@/lib/curriculum/data";
+import { useProgress, levelFromXp } from "@/lib/store/progress";
+
+const ACTIONS = [
+  {
+    href: "/temario",
+    icon: "▣",
+    title: "Temario",
+    desc: "Teoria completa de los 22 temas",
+    color: "var(--color-term-cyan)",
+  },
+  {
+    href: "/quiz",
+    icon: "?",
+    title: "Quiz",
+    desc: "Autoevaluacion + IA",
+    color: "var(--color-term-green)",
+  },
+  {
+    href: "/juegos",
+    icon: "◆",
+    title: "Juegos",
+    desc: "5 modos para fijar conceptos",
+    color: "var(--color-term-amber)",
+  },
+  {
+    href: "/flashcards",
+    icon: "▤",
+    title: "Flashcards",
+    desc: "Repaso espaciado",
+    color: "var(--color-term-magenta)",
+  },
+  {
+    href: "/tutor",
+    icon: "✦",
+    title: "Tutor IA",
+    desc: "Chat para tus dudas",
+    color: "var(--color-term-blue)",
+  },
+];
+
+export default function HomePage() {
+  const progress = useProgress();
+  const { level, into, need } = levelFromXp(progress.xp);
+  const readCount = progress.topicsRead.length;
+  const totalPct = Math.round((readCount / TOPICS.length) * 100);
+  const nextTopic = TOPICS.find((t) => !progress.topicsRead.includes(t.id));
+
+  return (
+    <div className="space-y-7">
+      {/* Hero */}
+      <section className="term-window fade-up">
+        <div className="term-titlebar">
+          <span className="term-dot" style={{ background: "#fb6f7d" }} />
+          <span className="term-dot" style={{ background: "#f6b545" }} />
+          <span className="term-dot" style={{ background: "#46e08a" }} />
+          <span className="ml-2 text-xs text-dim">study-terminal — bash</span>
+        </div>
+        <div className="p-5 sm:p-7">
+          <p className="text-sm text-muted">
+            <span className="prompt">whoami</span>
+          </p>
+          <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">
+            Estudiante de{" "}
+            <span className="glow-green">Taller de Programacion I</span>
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            Plataforma interactiva para preparar el{" "}
+            <strong className="text-ink">1er parcial teorico</strong>: teoria,
+            quizzes, juegos, flashcards y un tutor con IA, todo basado en la
+            guia de revision.
+            <span className="cursor" />
+          </p>
+
+          {/* stats */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="nivel" value={`${level}`} accent />
+            <Stat label="XP" value={`${progress.xp}`} />
+            <Stat label="racha" value={`${progress.streak} 🔥`} />
+            <Stat label="temas leidos" value={`${readCount}/${TOPICS.length}`} />
+          </div>
+
+          {/* level bar */}
+          <div className="mt-4">
+            <div className="mb-1 flex justify-between text-xs text-dim">
+              <span>progreso al nivel {level + 1}</span>
+              <span>
+                {into}/{need} XP
+              </span>
+            </div>
+            <div className="bar">
+              <span style={{ width: `${Math.round((into / need) * 100)}%` }} />
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            {nextTopic ? (
+              <Link href={`/temario/${nextTopic.id}`} className="btn btn-primary">
+                ▶ Continuar: {nextTopic.title}
+              </Link>
+            ) : (
+              <Link href="/quiz" className="btn btn-primary">
+                ✓ Temario completo — ir al Quiz
+              </Link>
+            )}
+            <Link href="/quiz" className="btn">
+              Quiz rapido
+            </Link>
+            <Link href="/tutor" className="btn">
+              Preguntarle al tutor
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Modulos */}
+      <section className="fade-up" style={{ animationDelay: "0.05s" }}>
+        <h2 className="mb-3 text-sm font-bold text-muted">
+          <span className="prompt-comment">progreso por modulo</span>
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {MODULES.map((m) => {
+            const topics = topicsByModule(m.id);
+            const read = topics.filter((t) =>
+              progress.topicsRead.includes(t.id)
+            ).length;
+            const pct = topics.length
+              ? Math.round((read / topics.length) * 100)
+              : 0;
+            return (
+              <Link
+                key={m.id}
+                href={`/temario#${m.id}`}
+                className="term-card term-card-hover block p-4"
+              >
+                <div className="flex items-start justify-between">
+                  <span className="text-xl glow-cyan" aria-hidden>
+                    {m.icon}
+                  </span>
+                  <span className="chip">
+                    {read}/{topics.length}
+                  </span>
+                </div>
+                <h3 className="mt-2 font-bold">{m.title}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted">
+                  {m.description}
+                </p>
+                <div className="bar mt-3">
+                  <span style={{ width: `${pct}%` }} />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Acciones */}
+      <section className="fade-up" style={{ animationDelay: "0.1s" }}>
+        <h2 className="mb-3 text-sm font-bold text-muted">
+          <span className="prompt-comment">modos de estudio</span>
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {ACTIONS.map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="term-card term-card-hover flex flex-col items-center p-4 text-center"
+            >
+              <span
+                className="text-2xl"
+                style={{ color: a.color, textShadow: `0 0 18px ${a.color}55` }}
+                aria-hidden
+              >
+                {a.icon}
+              </span>
+              <span className="mt-2 text-sm font-bold">{a.title}</span>
+              <span className="mt-0.5 text-[11px] leading-tight text-muted">
+                {a.desc}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Total */}
+      <section
+        className="term-card fade-up p-4"
+        style={{ animationDelay: "0.15s" }}
+      >
+        <div className="mb-1 flex items-center justify-between text-xs text-dim">
+          <span className="prompt-comment">avance total del temario</span>
+          <span>{totalPct}%</span>
+        </div>
+        <div className="bar">
+          <span style={{ width: `${totalPct}%` }} />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="term-card px-3 py-2.5">
+      <div className="text-[11px] uppercase tracking-wide text-dim">{label}</div>
+      <div
+        className={`text-lg font-extrabold ${accent ? "glow-green" : "text-ink"}`}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}

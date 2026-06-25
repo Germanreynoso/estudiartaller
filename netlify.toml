@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Runtime oficial de Next.js para Netlify. Convierte los Route Handlers
+# (/api/*) en funciones serverless, manteniendo GROQ_API_KEY del lado del
+# servidor. Netlify resuelve la version compatible automaticamente.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "22"

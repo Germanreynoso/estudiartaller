@@ -1,0 +1,378 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Sistema de diseño — "Study Terminal" (tema oscuro / code)
+   ============================================================ */
+@theme {
+  --color-bg: #080b11;
+  --color-panel: #0d131c;
+  --color-raised: #121b26;
+  --color-overlay: #16212e;
+  --color-border: #1d2733;
+  --color-border-bright: #2c3b4a;
+  --color-ink: #cdd9e5;
+  --color-muted: #7d8ea0;
+  --color-dim: #4a5563;
+
+  --color-term-green: #46e08a;
+  --color-term-cyan: #45c8f5;
+  --color-term-amber: #f6b545;
+  --color-term-magenta: #e879f9;
+  --color-term-red: #fb6f7d;
+  --color-term-blue: #5b9dff;
+
+  --font-mono: ui-monospace, "JetBrains Mono", "Fira Code", "SFMono-Regular",
+    Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: var(--font-mono);
+
+  --radius-card: 10px;
+}
+
+/* ---------- base ---------- */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(
+      circle at 18% -10%,
+      rgba(70, 224, 138, 0.08),
+      transparent 45%
+    ),
+    radial-gradient(circle at 95% 0%, rgba(69, 200, 245, 0.07), transparent 42%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(70, 224, 138, 0.28);
+  color: #eafff3;
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-bright);
+  border-radius: 6px;
+  border: 2px solid var(--color-bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dim);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ============================================================
+   Componentes
+   ============================================================ */
+
+/* Ventana tipo terminal con botones de macOS */
+.term-window {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: 0 18px 50px -28px rgba(0, 0, 0, 0.9);
+}
+.term-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  background: var(--color-raised);
+  border-bottom: 1px solid var(--color-border);
+}
+.term-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+/* Tarjeta genérica */
+.term-card {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  transition: border-color 0.18s ease, transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.term-card-hover:hover {
+  border-color: var(--color-border-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px -22px rgba(70, 224, 138, 0.35);
+}
+
+/* Prompt "$" */
+.prompt::before {
+  content: "$ ";
+  color: var(--color-term-green);
+}
+.prompt-comment {
+  color: var(--color-dim);
+}
+.prompt-comment::before {
+  content: "// ";
+}
+
+/* Cursor parpadeante */
+.cursor::after {
+  content: "▋";
+  color: var(--color-term-green);
+  animation: blink 1.05s steps(2, start) infinite;
+  margin-left: 2px;
+}
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-bright);
+  background: var(--color-raised);
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--color-term-green);
+  color: #eafff3;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: linear-gradient(180deg, rgba(70, 224, 138, 0.22), rgba(70, 224, 138, 0.1));
+  border-color: rgba(70, 224, 138, 0.55);
+  color: #d6ffe8;
+}
+.btn-primary:hover:not(:disabled) {
+  border-color: var(--color-term-green);
+  box-shadow: 0 0 0 1px rgba(70, 224, 138, 0.3),
+    0 10px 30px -12px rgba(70, 224, 138, 0.5);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-raised);
+  border-color: var(--color-border);
+}
+
+/* Chips / badges */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-bright);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+/* Barra de progreso */
+.bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-overlay);
+  overflow: hidden;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-term-green), var(--color-term-cyan));
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Texto con glow */
+.glow-green {
+  color: var(--color-term-green);
+  text-shadow: 0 0 18px rgba(70, 224, 138, 0.45);
+}
+.glow-cyan {
+  color: var(--color-term-cyan);
+  text-shadow: 0 0 18px rgba(69, 200, 245, 0.4);
+}
+
+/* Animaciones de entrada */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop {
+  animation: pop 0.3s ease both;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+.shake {
+  animation: shake 0.4s ease;
+}
+
+/* Contenido de teoría (markdown renderizado) */
+.prose-term {
+  color: var(--color-ink);
+  overflow-wrap: break-word;
+}
+.prose-term code {
+  overflow-wrap: anywhere;
+}
+.prose-term h2 {
+  font-size: 1.15rem;
+  color: var(--color-term-cyan);
+  margin: 1.6em 0 0.6em;
+  font-weight: 700;
+}
+.prose-term h3 {
+  font-size: 1rem;
+  color: var(--color-term-green);
+  margin: 1.3em 0 0.4em;
+  font-weight: 700;
+}
+.prose-term p {
+  margin: 0.7em 0;
+}
+.prose-term ul,
+.prose-term ol {
+  margin: 0.7em 0;
+  padding-left: 1.4em;
+}
+.prose-term li {
+  margin: 0.3em 0;
+}
+.prose-term ul > li::marker {
+  color: var(--color-term-green);
+}
+.prose-term ol > li::marker {
+  color: var(--color-term-cyan);
+}
+.prose-term strong {
+  color: #eef6ff;
+  font-weight: 700;
+}
+.prose-term code {
+  background: var(--color-overlay);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 0.92em;
+  color: var(--color-term-amber);
+}
+.prose-term pre {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+.prose-term pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-ink);
+}
+.prose-term blockquote {
+  border-left: 3px solid var(--color-term-green);
+  padding-left: 14px;
+  margin: 1em 0;
+  color: var(--color-muted);
+}
+.prose-term table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.92em;
+}
+.prose-term th,
+.prose-term td {
+  border: 1px solid var(--color-border);
+  padding: 7px 10px;
+  text-align: left;
+}
+.prose-term th {
+  background: var(--color-raised);
+  color: var(--color-term-cyan);
+}
+
+/* Utilidad: ocultar scrollbar puntual */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}

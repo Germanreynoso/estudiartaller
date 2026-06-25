@@ -114,7 +114,7 @@ export default function TutorChat() {
 
       <div
         ref={scrollRef}
-        className="term-window flex-1 space-y-4 overflow-y-auto p-4 sm:p-5"
+        className="term-card min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5"
       >
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center">

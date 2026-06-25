@@ -1,10 +1,17 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { TOPICS, topicById, allQuestions } from "@/lib/curriculum/data";
 import { MODULES } from "@/lib/curriculum/modules";
 import { pickRandom } from "@/lib/utils";
+import { useProgress } from "@/lib/store/progress";
+import {
+  buildAdaptiveDeck,
+  weakTopics,
+  reviewCount,
+  hasPractice,
+} from "@/lib/adaptive";
 import QuizRunner, { QuizQuestion } from "@/components/quiz/QuizRunner";
 
 interface ActiveQuiz {
@@ -13,15 +20,28 @@ interface ActiveQuiz {
   title: string;
 }
 
+function masteryColor(m: number): string {
+  if (m < 40) return "var(--color-term-red)";
+  if (m < 70) return "var(--color-term-amber)";
+  return "var(--color-term-green)";
+}
+
 function QuizContent() {
   const params = useSearchParams();
   const topicParam = params.get("topic");
+  const modoParam = params.get("modo");
+  const progress = useProgress();
 
   const [active, setActive] = useState<ActiveQuiz | null>(null);
   const [round, setRound] = useState(0);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiTopic, setAiTopic] = useState<string>("");
+  const started = useRef(false);
+
+  const weak = weakTopics(progress, 6);
+  const pending = reviewCount(progress);
+  const practiced = hasPractice(progress);
 
   function start(a: ActiveQuiz) {
     setActive(a);
@@ -50,21 +70,32 @@ function QuizContent() {
     });
   }
 
-  async function startAI() {
-    setAiLoading(true);
+  function startAdaptive() {
+    const { questions } = buildAdaptiveDeck(progress, 12);
+    if (!questions.length) return;
+    start({
+      questions,
+      recordKey: "adaptativo",
+      title: "Practica adaptativa",
+    });
+  }
+
+  async function startAI(forTopic?: string) {
+    const tid = forTopic ?? aiTopic;
+    setAiLoading(tid || "all");
     setAiError(null);
     try {
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topicId: aiTopic || undefined, count: 6 }),
+        body: JSON.stringify({ topicId: tid || undefined, count: 6 }),
       });
       const data = await res.json();
       if (!res.ok) {
         setAiError(data.error ?? "No se pudo generar el quiz.");
         return;
       }
-      const t = aiTopic ? topicById(aiTopic) : null;
+      const t = tid ? topicById(tid) : null;
       start({
         questions: (data.questions as QuizQuestion[]).map((q) => ({
           ...q,
@@ -77,15 +108,22 @@ function QuizContent() {
     } catch {
       setAiError("Error de conexion con la IA.");
     } finally {
-      setAiLoading(false);
+      setAiLoading(null);
     }
   }
 
-  // Si llega ?topic=, arranca ese tema directamente.
+  // Arranque automatico desde ?topic= o ?modo=adaptivo
   useEffect(() => {
-    if (topicParam && topicById(topicParam)) startTopic(topicParam);
+    if (started.current) return;
+    if (topicParam && topicById(topicParam)) {
+      started.current = true;
+      startTopic(topicParam);
+    } else if (modoParam === "adaptivo") {
+      started.current = true;
+      startAdaptive();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicParam]);
+  }, [topicParam, modoParam, progress]);
 
   if (active) {
     return (
@@ -106,11 +144,109 @@ function QuizContent() {
           <span className="prompt">run quiz</span>
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Elegi un modo de practica. Tu puntaje suma XP y mantiene la racha.
+          Tu rendimiento se guarda: la practica adaptativa refuerza lo que mas
+          te cuesta.
         </p>
       </header>
 
-      {/* Mixto + IA */}
+      {/* Practica adaptativa */}
+      <section
+        className="term-window fade-up"
+        style={{ borderColor: "rgba(70,224,138,0.35)" }}
+      >
+        <div className="term-titlebar">
+          <span className="term-dot" style={{ background: "#fb6f7d" }} />
+          <span className="term-dot" style={{ background: "#f6b545" }} />
+          <span className="term-dot" style={{ background: "#46e08a" }} />
+          <span className="ml-2 text-xs text-dim">adaptive --reinforce</span>
+        </div>
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold glow-green">
+              ◎ Practica adaptativa
+            </h2>
+            <p className="mt-1 max-w-md text-sm text-muted">
+              Arma un quiz priorizando las preguntas que fallaste y los temas
+              donde estas mas flojo.
+              {practiced ? (
+                <>
+                  {" "}
+                  Tenes{" "}
+                  <span className="text-term-amber">{pending}</span> preguntas
+                  para reforzar.
+                </>
+              ) : (
+                <> Hace un par de quizzes y se va calibrando solo.</>
+              )}
+            </p>
+          </div>
+          <button
+            className="btn btn-primary shrink-0"
+            onClick={startAdaptive}
+          >
+            ▶ Reforzar (12)
+          </button>
+        </div>
+      </section>
+
+      {/* Temas flojos */}
+      <section className="fade-up">
+        <h2 className="mb-3 text-sm font-bold text-muted">
+          <span className="prompt-comment">tus temas flojos</span>
+        </h2>
+        {weak.length === 0 ? (
+          <div className="term-card p-4 text-sm text-muted">
+            Todavia no hay datos suficientes. Resolve algunos quizzes y aca van a
+            aparecer los temas donde conviene reforzar, ordenados por dominio.
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {weak.map((t) => (
+              <div key={t.id} className="term-card p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold">
+                      <span className="text-dim">{t.number}.</span> {t.title}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-dim">
+                      dominio {t.mastery}% · {t.seen}/{t.total} vistas
+                      {t.wrong > 0 && (
+                        <span className="text-term-red"> · {t.wrong} errores</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      className="btn btn-ghost text-xs"
+                      onClick={() => startTopic(t.id)}
+                    >
+                      practicar
+                    </button>
+                    <button
+                      className="btn text-xs"
+                      onClick={() => startAI(t.id)}
+                      disabled={aiLoading !== null}
+                    >
+                      {aiLoading === t.id ? "…" : "✦ IA"}
+                    </button>
+                  </div>
+                </div>
+                <div className="bar mt-2.5">
+                  <span
+                    style={{
+                      width: `${t.mastery}%`,
+                      background: masteryColor(t.mastery),
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {aiError && <p className="mt-2 text-xs text-term-red">{aiError}</p>}
+      </section>
+
+      {/* Mixto + IA general */}
       <section className="grid gap-3 sm:grid-cols-2 fade-up">
         <div className="term-card p-5">
           <div className="text-lg glow-green" aria-hidden>
@@ -154,15 +290,12 @@ function QuizContent() {
             </select>
             <button
               className="btn btn-primary"
-              onClick={startAI}
-              disabled={aiLoading}
+              onClick={() => startAI()}
+              disabled={aiLoading !== null}
             >
-              {aiLoading ? "generando…" : "Generar"}
+              {aiLoading === (aiTopic || "all") ? "generando…" : "Generar"}
             </button>
           </div>
-          {aiError && (
-            <p className="mt-2 text-xs text-term-red">{aiError}</p>
-          )}
         </div>
       </section>
 

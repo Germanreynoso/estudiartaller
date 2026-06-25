@@ -13,10 +13,19 @@ export interface QuizStat {
   best: number; // mejor % logrado
 }
 
+export interface QuizItem {
+  seen: number;
+  wrong: number;
+  box: number; // 1..5 (Leitner): 1 = recien fallada, 5 = dominada
+  lastSeen: number;
+  lastWrongAt: number | null;
+}
+
 export interface ProgressState {
   version: number;
   topicsRead: string[];
   quizStats: Record<string, QuizStat>; // clave: topicId | "mixto"
+  quizItems: Record<string, QuizItem>; // clave: `${topicId}:${questionId}`
   flashboxes: Record<string, number>; // cardId -> caja Leitner (1..5)
   gamesPlayed: Record<string, number>; // gameId -> veces jugado
   gameBest: Record<string, number>; // gameId -> mejor puntaje
@@ -26,12 +35,13 @@ export interface ProgressState {
 }
 
 const STORAGE_KEY = "tp1-study-progress";
-const VERSION = 1;
+const VERSION = 2;
 
 const DEFAULT: ProgressState = {
   version: VERSION,
   topicsRead: [],
   quizStats: {},
+  quizItems: {},
   flashboxes: {},
   gamesPlayed: {},
   gameBest: {},
@@ -145,6 +155,28 @@ export const progressActions = {
         quizStats: { ...s.quizStats, [key]: stat },
         xp: s.xp + correct * 5,
       });
+    });
+  },
+
+  // Registra el resultado por pregunta para la practica adaptativa.
+  recordQuizItems(items: { key: string; correct: boolean }[]) {
+    if (!items.length) return;
+    set((s) => {
+      const now = Date.now();
+      const next = { ...s.quizItems };
+      for (const { key, correct } of items) {
+        const prev =
+          next[key] ??
+          ({ seen: 0, wrong: 0, box: 0, lastSeen: 0, lastWrongAt: null } as QuizItem);
+        next[key] = {
+          seen: prev.seen + 1,
+          wrong: prev.wrong + (correct ? 0 : 1),
+          box: correct ? Math.min(5, (prev.box || 1) + 1) : 1,
+          lastSeen: now,
+          lastWrongAt: correct ? prev.lastWrongAt : now,
+        };
+      }
+      return { ...s, quizItems: next };
     });
   },
 

@@ -56,8 +56,18 @@ export default function QuizRunner({
     if (done && !recorded.current) {
       recorded.current = true;
       progressActions.recordQuiz(recordKey, correctCount, total);
+      // Registro por pregunta para la practica adaptativa (solo preguntas
+      // estaticas del temario; se omiten las generadas por IA con id "ai-").
+      const items = deck
+        .map((q, i) => ({ q, correct: !!results[i] }))
+        .filter(({ q }) => q.topicId && !q.id.startsWith("ai-"))
+        .map(({ q, correct }) => ({
+          key: `${q.topicId}:${q.id}`,
+          correct,
+        }));
+      progressActions.recordQuizItems(items);
     }
-  }, [done, correctCount, total, recordKey]);
+  }, [done, correctCount, total, recordKey, deck, results]);
 
   if (!q && !done) {
     return (

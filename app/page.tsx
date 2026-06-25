@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MODULES } from "@/lib/curriculum/modules";
 import { TOPICS, topicsByModule } from "@/lib/curriculum/data";
 import { useProgress, levelFromXp } from "@/lib/store/progress";
+import { reviewCount } from "@/lib/adaptive";
 
 const ACTIONS = [
   {
@@ -49,6 +50,7 @@ export default function HomePage() {
   const readCount = progress.topicsRead.length;
   const totalPct = Math.round((readCount / TOPICS.length) * 100);
   const nextTopic = TOPICS.find((t) => !progress.topicsRead.includes(t.id));
+  const pending = reviewCount(progress);
 
   return (
     <div className="space-y-7">
@@ -116,6 +118,32 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Repaso recomendado */}
+      {pending > 0 && (
+        <Link
+          href="/quiz?modo=adaptivo"
+          className="term-card term-card-hover flex items-center justify-between gap-3 p-4 fade-up"
+          style={{ borderColor: "rgba(246,181,69,0.4)" }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl" aria-hidden>
+              ◎
+            </span>
+            <div>
+              <div className="font-bold">
+                Repaso recomendado{" "}
+                <span className="text-term-amber">({pending})</span>
+              </div>
+              <div className="text-xs text-muted">
+                Tenes preguntas para reforzar segun tus errores. Practica
+                adaptativa →
+              </div>
+            </div>
+          </div>
+          <span className="btn btn-primary shrink-0">▶ Reforzar</span>
+        </Link>
+      )}
 
       {/* Modulos */}
       <section className="fade-up" style={{ animationDelay: "0.05s" }}>

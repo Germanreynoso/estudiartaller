@@ -35,16 +35,21 @@ A) un texto apto para LOGICA PROPOSICIONAL: usa conectivos (y, o, no, si...enton
 B) un texto apto para LOGICA DE PREDICADOS: usa cuantificadores (todos, ningun, algun, existe, para todo, cada).
 Devolve EXCLUSIVAMENTE: { "text": "..." }`;
 
+const SYS_TEXTO_PRED = `Sos generador de textos breves para practicar LOGICA DE PREDICADOS en "Matematica para la computacion".
+Genera UN texto corto en espanol (2 a 4 oraciones) que use cuantificadores (todos, ningun, algun, existe, para todo, cada) y que contenga preferentemente un ARGUMENTO (premisas y conclusion), por ejemplo un silogismo categorico como: "Todos los X son Y. Z es un X. Por lo tanto, Z es Y.".
+Devolve EXCLUSIVAMENTE: { "text": "..." }`;
+
 const SYS_ANALIZAR = `Sos un analista de logica para "Matematica para la computacion". Analiza el TEXTO del usuario.
 Reglas de notacion: usa simbolos Unicode (¬ ∧ ∨ ⊕ → ↔ ∀ ∃) y variables minusculas (p, q, r). NO uses LaTeX.
 
-1) TIPO DE PROPOSICION del enunciado principal del texto:
-- "esProposicion": false si es pregunta, orden/imperativo, deseo o exclamacion (no tiene valor de verdad); true si es declarativo.
+1) TIPO. Primero deci si el texto es un ARGUMENTO o una sola proposicion:
+- "esArgumento": true si el texto presenta premisas y una conclusion (marcadores: "por lo tanto", "luego", "en consecuencia", "se concluye", "∴"). false si es un unico enunciado.
+- "esProposicion": false si el enunciado principal es pregunta, orden/imperativo, deseo o exclamacion (no tiene valor de verdad); true si es declarativo.
 - "claseProposicion": uno de "simple", "conjuncion", "disyuncion", "condicional", "bicondicional", "negacion", "no-proposicion".
   Una proposicion SIMPLE no tiene conectivos. Una COMPUESTA se clasifica por su conectivo principal (y=conjuncion, o=disyuncion, si...entonces=condicional, si y solo si=bicondicional, no=negacion).
-  Si esProposicion es false, usa "no-proposicion".
-- "explicacionTipo": breve explicacion (que conectivo principal tiene, o por que no es proposicion).
-  Si el texto es un argumento (premisas y conclusion), clasifica el tipo de la CONCLUSION.
+  IMPORTANTE: si "esArgumento" es true, "claseProposicion" debe describir la CONCLUSION del argumento (NO toda la formula). Si "esProposicion" es false, usa "no-proposicion".
+- "explicacionTipo": breve explicacion (que conectivo principal tiene la conclusion/enunciado, o por que no es proposicion).
+Siempre que detectes uno o mas argumentos, completa en cada uno "regla" (nombre de la regla de inferencia: Modus Ponens, Modus Tollens, Silogismo hipotetico, Silogismo disyuntivo, Silogismo categorico, Instanciacion universal, etc., o null) y "valido" (true/false).
 
 2) Decidi si conviene modelarlo con LOGICA PROPOSICIONAL (sin cuantificadores) o LOGICA DE PREDICADOS (si hay "todos/algun/existe/ningun/para todo").
 Si es proposicional, escribi una "simbolizacion" con una formula valida usando SOLO estas variables y operadores: letras minusculas, ¬ ∧ ∨ ⊕ → ↔ y parentesis (sera evaluada por un motor de tablas de verdad, asi que debe ser sintacticamente correcta).
@@ -52,6 +57,7 @@ Extrae TODOS los argumentos (razonamientos premisas -> conclusion) que encuentre
 
 Devolve EXCLUSIVAMENTE este JSON:
 {
+  "esArgumento": true|false,
   "esProposicion": true|false,
   "claseProposicion": "simple"|"conjuncion"|"disyuncion"|"condicional"|"bicondicional"|"negacion"|"no-proposicion",
   "explicacionTipo": "breve",
@@ -72,7 +78,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { mode?: Mode; text?: string };
+  let body: { mode?: Mode; text?: string; focus?: string };
   try {
     body = await req.json();
   } catch {
@@ -80,6 +86,7 @@ export async function POST(req: NextRequest) {
   }
 
   const mode: Mode = body.mode ?? "analizar";
+  const focusPred = body.focus === "predicados";
 
   let system: string;
   let user: string;
@@ -89,7 +96,7 @@ export async function POST(req: NextRequest) {
     user = "Genera el set de 8 enunciados ahora.";
     temperature = 0.9;
   } else if (mode === "texto") {
-    system = SYS_TEXTO;
+    system = focusPred ? SYS_TEXTO_PRED : SYS_TEXTO;
     user = "Genera un texto nuevo ahora.";
     temperature = 1.0;
   } else {
@@ -97,7 +104,9 @@ export async function POST(req: NextRequest) {
     if (!text)
       return Response.json({ error: "Falta el texto a analizar." }, { status: 400 });
     system = SYS_ANALIZAR;
-    user = `TEXTO A ANALIZAR:\n${text}`;
+    user = focusPred
+      ? `TEXTO A ANALIZAR:\n${text}\n\nNota: el usuario practica LOGICA DE PREDICADOS. Identifica predicados y cuantificadores, y analiza los argumentos con cuantificadores (silogismos categoricos, instanciacion universal), nombrando la regla y si son validos.`
+      : `TEXTO A ANALIZAR:\n${text}`;
     temperature = 0.3;
   }
 
@@ -178,6 +187,7 @@ function sanitize(mode: Mode, data: unknown): Record<string, unknown> {
       ? "simple"
       : "no-proposicion";
   return {
+    esArgumento: Boolean(obj.esArgumento),
     esProposicion,
     claseProposicion,
     explicacionTipo: String(obj.explicacionTipo ?? ""),

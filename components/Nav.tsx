@@ -16,6 +16,9 @@ const LINKS = [
   { href: "/tutor", label: "tutor", icon: "✦" },
 ];
 
+// Apartado de practica de logica, solo para Matematicas.
+const PRACTICA_LINK = { href: "/practica", label: "logica", icon: "⊢" };
+
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
@@ -26,6 +29,8 @@ export default function Nav() {
   const { level } = levelFromXp(progress.xp);
   const subject = useSubject();
   const host = subject === "matematicas" ? "mate@study" : "tp1@study";
+  const links =
+    subject === "matematicas" ? [...LINKS, PRACTICA_LINK] : LINKS;
 
   return (
     <>
@@ -47,7 +52,7 @@ export default function Nav() {
 
           {/* Links inline solo en desktop */}
           <nav className="hidden flex-1 items-center gap-0.5 sm:flex">
-            {LINKS.map((l) => {
+            {links.map((l) => {
               const active = isActive(pathname, l.href);
               return (
                 <Link
@@ -98,7 +103,7 @@ export default function Nav() {
       {/* Barra inferior tipo app, solo en mobile */}
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-bg/95 backdrop-blur sm:hidden">
         <div className="mx-auto flex max-w-6xl items-stretch">
-          {LINKS.map((l) => {
+          {links.map((l) => {
             const active = isActive(pathname, l.href);
             return (
               <Link

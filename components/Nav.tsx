@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProgress, levelFromXp } from "@/lib/store/progress";
+import { useSubject, subjectActions } from "@/lib/store/subject";
+import { SUBJECTS } from "@/lib/curriculum/subjects";
+import type { SubjectId } from "@/lib/curriculum/types";
 
 const LINKS = [
   { href: "/", label: "inicio", icon: "~" },
@@ -21,6 +24,8 @@ export default function Nav() {
   const pathname = usePathname();
   const progress = useProgress();
   const { level } = levelFromXp(progress.xp);
+  const subject = useSubject();
+  const host = subject === "matematicas" ? "mate@study" : "tp1@study";
 
   return (
     <>
@@ -34,7 +39,7 @@ export default function Nav() {
               <span className="term-dot" style={{ background: "#46e08a" }} />
             </span>
             <span className="text-sm font-bold">
-              <span className="text-muted">tp1@study</span>
+              <span className="text-muted">{host}</span>
               <span className="text-dim">:</span>
               <span className="glow-green">~$</span>
             </span>
@@ -64,10 +69,26 @@ export default function Nav() {
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-2.5 text-xs sm:ml-0">
+            <select
+              value={subject}
+              onChange={(e) => subjectActions.set(e.target.value as SubjectId)}
+              aria-label="Materia"
+              title="Cambiar de materia"
+              className="rounded-md border border-border-bright bg-raised px-2 py-1 text-xs font-semibold text-ink outline-none focus:border-term-cyan"
+            >
+              {SUBJECTS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.icon} {s.short}
+                </option>
+              ))}
+            </select>
             <span className="chip" title="Racha de dias estudiando">
               🔥 {progress.streak}
             </span>
-            <span className="chip" title="Nivel / experiencia">
+            <span
+              className="chip hidden sm:inline-flex"
+              title="Nivel / experiencia"
+            >
               <span className="glow-cyan">lvl {level}</span>
             </span>
           </div>

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getGroq, GROQ_MODEL, hasGroqKey } from "@/lib/groq";
 import { topicById } from "@/lib/curriculum/data";
 import { curriculumOutline } from "@/lib/curriculum/context";
+import type { SubjectId } from "@/lib/curriculum/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { topicId?: string; count?: number };
+  let body: { topicId?: string; count?: number; subject?: string };
   try {
     body = await req.json();
   } catch {
@@ -32,15 +33,22 @@ export async function POST(req: NextRequest) {
   }
 
   const count = Math.min(Math.max(body.count ?? 5, 1), 8);
+  const subject: SubjectId =
+    body.subject === "matematicas" ? "matematicas" : "taller";
   const topic = body.topicId ? topicById(body.topicId) : null;
 
   const focus = topic
     ? `Genera preguntas SOLO sobre el tema "${topic.title}".\nResumen: ${topic.short}\nPuntos clave:\n${topic.keyPoints
         .map((k) => `- ${k}`)
         .join("\n")}`
-    : `Genera preguntas variadas sobre el temario completo:\n${curriculumOutline()}`;
+    : `Genera preguntas variadas sobre el temario completo:\n${curriculumOutline(subject)}`;
 
-  const system = `Sos generador de preguntas de examen para "Taller de Programacion I" (1er año, tecnicatura en desarrollo de software).
+  const domain =
+    subject === "matematicas"
+      ? `"Matematica para la computacion" (logica proposicional y de predicados). Usa notacion logica Unicode (¬ ∧ ∨ ⊕ → ↔ ≡ ∀ ∃) cuando corresponda; NO uses LaTeX. Las tablas de verdad describilas en texto plano dentro del enunciado.`
+      : `"Taller de Programacion I" (1er año, tecnicatura en desarrollo de software).`;
+
+  const system = `Sos generador de preguntas de examen para ${domain}
 Devolves EXCLUSIVAMENTE un objeto JSON valido con esta forma:
 {
   "questions": [

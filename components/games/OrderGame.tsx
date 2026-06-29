@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { progressActions } from "@/lib/store/progress";
 import { shuffle, pickRandom, cn } from "@/lib/utils";
 import { allOrderChallenges } from "@/lib/curriculum/data";
+import type { SubjectId } from "@/lib/curriculum/types";
 
 type Challenge = { id: string; title: string; steps: string[] };
 
@@ -19,10 +20,16 @@ function shuffledDifferent(steps: string[]): string[] {
   return out;
 }
 
-export default function OrderGame({ onExit }: { onExit: () => void }) {
-  // Pool de retos jugables (>= 3 pasos).
+export default function OrderGame({
+  subject,
+  onExit,
+}: {
+  subject: SubjectId;
+  onExit: () => void;
+}) {
+  // Pool de retos jugables (>= 3 pasos) de la materia activa.
   const pool = useRef<Challenge[]>(
-    allOrderChallenges().filter((c) => c.steps.length >= 3)
+    allOrderChallenges(subject).filter((c) => c.steps.length >= 3)
   );
 
   // Estado del reto actual + orden barajado inicial.
@@ -83,7 +90,7 @@ export default function OrderGame({ onExit }: { onExit: () => void }) {
       const sc = Math.max(50, 500 - (n - 1) * 60);
       setScore(sc);
       setWon(true);
-      progressActions.recordGame("ordenar", sc);
+      progressActions.recordGame(`${subject}:ordenar`, sc);
     }
   }
 

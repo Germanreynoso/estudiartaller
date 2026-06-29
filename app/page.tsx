@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { MODULES } from "@/lib/curriculum/modules";
-import { TOPICS, topicsByModule } from "@/lib/curriculum/data";
+import { modulesBySubject } from "@/lib/curriculum/modules";
+import { topicsByModule, topicsBySubject } from "@/lib/curriculum/data";
 import { useProgress, levelFromXp } from "@/lib/store/progress";
+import { useSubject } from "@/lib/store/subject";
+import { subjectById } from "@/lib/curriculum/subjects";
 import { reviewCount } from "@/lib/adaptive";
 
 const ACTIONS = [
@@ -11,7 +13,7 @@ const ACTIONS = [
     href: "/temario",
     icon: "▣",
     title: "Temario",
-    desc: "Teoria completa de los 22 temas",
+    desc: "Teoria completa de cada tema",
     color: "var(--color-term-cyan)",
   },
   {
@@ -25,7 +27,7 @@ const ACTIONS = [
     href: "/juegos",
     icon: "◆",
     title: "Juegos",
-    desc: "5 modos para fijar conceptos",
+    desc: "Modos para fijar conceptos",
     color: "var(--color-term-amber)",
   },
   {
@@ -46,11 +48,20 @@ const ACTIONS = [
 
 export default function HomePage() {
   const progress = useProgress();
+  const subject = useSubject();
   const { level, into, need } = levelFromXp(progress.xp);
-  const readCount = progress.topicsRead.length;
-  const totalPct = Math.round((readCount / TOPICS.length) * 100);
-  const nextTopic = TOPICS.find((t) => !progress.topicsRead.includes(t.id));
-  const pending = reviewCount(progress);
+  const subjectTopics = topicsBySubject(subject);
+  const subjectTitle = subjectById(subject)?.title ?? "la materia";
+  const readCount = subjectTopics.filter((t) =>
+    progress.topicsRead.includes(t.id)
+  ).length;
+  const totalPct = subjectTopics.length
+    ? Math.round((readCount / subjectTopics.length) * 100)
+    : 0;
+  const nextTopic = subjectTopics.find(
+    (t) => !progress.topicsRead.includes(t.id)
+  );
+  const pending = reviewCount(progress, subject);
 
   return (
     <div className="space-y-7">
@@ -67,14 +78,13 @@ export default function HomePage() {
             <span className="prompt">whoami</span>
           </p>
           <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">
-            Estudiante de{" "}
-            <span className="glow-green">Taller de Programacion I</span>
+            Estudiante de <span className="glow-green">{subjectTitle}</span>
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted">
             Plataforma interactiva para preparar el{" "}
-            <strong className="text-ink">1er parcial teorico</strong>: teoria,
-            quizzes, juegos, flashcards y un tutor con IA, todo basado en la
-            guia de revision.
+            <strong className="text-ink">parcial</strong>: teoria, quizzes,
+            juegos, flashcards y un tutor con IA. Cambia de materia desde el
+            selector de la barra superior.
             <span className="cursor" />
           </p>
 
@@ -83,7 +93,10 @@ export default function HomePage() {
             <Stat label="nivel" value={`${level}`} accent />
             <Stat label="XP" value={`${progress.xp}`} />
             <Stat label="racha" value={`${progress.streak} 🔥`} />
-            <Stat label="temas leidos" value={`${readCount}/${TOPICS.length}`} />
+            <Stat
+              label="temas leidos"
+              value={`${readCount}/${subjectTopics.length}`}
+            />
           </div>
 
           {/* level bar */}
@@ -151,7 +164,7 @@ export default function HomePage() {
           <span className="prompt-comment">progreso por modulo</span>
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {MODULES.map((m) => {
+          {modulesBySubject(subject).map((m) => {
             const topics = topicsByModule(m.id);
             const read = topics.filter((t) =>
               progress.topicsRead.includes(t.id)

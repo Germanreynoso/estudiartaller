@@ -1,17 +1,20 @@
-import { TOPICS, topicById } from "./data";
+import { TOPICS, topicById, topicsBySubject } from "./data";
+import type { SubjectId } from "./types";
 
 // Construye contexto del temario para anclar a la IA (RAG simple en prompt).
 
-export function curriculumOutline(): string {
-  return TOPICS.map(
-    (t) => `${t.number}. ${t.title} (modulo ${t.module}) — ${t.short}`
-  ).join("\n");
+export function curriculumOutline(subject?: SubjectId): string {
+  const list = subject ? topicsBySubject(subject) : TOPICS;
+  return list
+    .map((t) => `${t.number}. ${t.title} (modulo ${t.module}) — ${t.short}`)
+    .join("\n");
 }
 
-export function curriculumKeyPoints(): string {
-  return TOPICS.map(
-    (t) => `### ${t.title}\n${t.keyPoints.map((k) => `- ${k}`).join("\n")}`
-  ).join("\n\n");
+export function curriculumKeyPoints(subject?: SubjectId): string {
+  const list = subject ? topicsBySubject(subject) : TOPICS;
+  return list
+    .map((t) => `### ${t.title}\n${t.keyPoints.map((k) => `- ${k}`).join("\n")}`)
+    .join("\n\n");
 }
 
 export function topicDeepContext(id: string): string {

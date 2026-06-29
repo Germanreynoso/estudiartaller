@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { TOPICS, allFlashcards } from "@/lib/curriculum/data";
+import { useEffect, useMemo, useState } from "react";
+import { topicsBySubject, allFlashcards } from "@/lib/curriculum/data";
 import { useProgress, progressActions } from "@/lib/store/progress";
+import { useSubject } from "@/lib/store/subject";
 import { shuffle, cn } from "@/lib/utils";
 
 interface Card {
@@ -17,6 +18,7 @@ const SESSION_SIZE = 15;
 
 export default function FlashcardsPage() {
   const progress = useProgress();
+  const subject = useSubject();
   const [topicFilter, setTopicFilter] = useState<string>("");
   const [session, setSession] = useState<Card[] | null>(null);
   const [idx, setIdx] = useState(0);
@@ -24,14 +26,19 @@ export default function FlashcardsPage() {
   const [reviewed, setReviewed] = useState(0);
 
   const allCards = useMemo<Card[]>(() => {
-    return allFlashcards().map((f) => ({
+    return allFlashcards(subject).map((f) => ({
       key: `${f.topicId}:${f.id}`,
       front: f.front,
       back: f.back,
       topicTitle: f.topicTitle,
       box: progress.flashboxes[`${f.topicId}:${f.id}`] ?? 1,
     }));
-  }, [progress.flashboxes]);
+  }, [progress.flashboxes, subject]);
+
+  // Al cambiar de materia, el filtro por tema (de la otra materia) ya no aplica.
+  useEffect(() => {
+    setTopicFilter("");
+  }, [subject]);
 
   // Distribucion por caja (1..5).
   const dist = useMemo(() => {
@@ -190,7 +197,7 @@ export default function FlashcardsPage() {
             className="rounded-md border border-border-bright bg-raised px-3 py-2 text-sm outline-none focus:border-term-cyan"
           >
             <option value="">Todos los temas ({allCards.length})</option>
-            {TOPICS.map((t) => (
+            {topicsBySubject(subject).map((t) => (
               <option key={t.id} value={t.title}>
                 {t.number}. {t.title}
               </option>

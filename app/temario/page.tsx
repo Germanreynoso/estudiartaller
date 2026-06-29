@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { MODULES } from "@/lib/curriculum/modules";
-import { topicsByModule, TOPICS } from "@/lib/curriculum/data";
+import { modulesBySubject } from "@/lib/curriculum/modules";
+import { topicsByModule, topicsBySubject } from "@/lib/curriculum/data";
 import { useProgress } from "@/lib/store/progress";
+import { useSubject } from "@/lib/store/subject";
 
 export default function TemarioPage() {
   const progress = useProgress();
-  const read = new Set(progress.topicsRead);
+  const subject = useSubject();
+  const modules = modulesBySubject(subject);
+  const subjectTopics = topicsBySubject(subject);
+  const read = new Set(
+    progress.topicsRead.filter((id) => subjectTopics.some((t) => t.id === id))
+  );
 
   return (
     <div className="space-y-7">
@@ -16,12 +22,12 @@ export default function TemarioPage() {
           <span className="prompt">cat temario.md</span>
         </h1>
         <p className="mt-1 text-sm text-muted">
-          {TOPICS.length} temas en {MODULES.length} modulos ·{" "}
-          {read.size}/{TOPICS.length} leidos
+          {subjectTopics.length} temas en {modules.length} modulos ·{" "}
+          {read.size}/{subjectTopics.length} leidos
         </p>
       </header>
 
-      {MODULES.map((m, mi) => {
+      {modules.map((m, mi) => {
         const topics = topicsByModule(m.id);
         return (
           <section

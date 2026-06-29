@@ -4,20 +4,27 @@ import { useState, useEffect, useCallback } from "react";
 import { progressActions } from "@/lib/store/progress";
 import { shuffle, pickRandom, cn } from "@/lib/utils";
 import { allMatchPairs } from "@/lib/curriculum/data";
+import type { SubjectId } from "@/lib/curriculum/types";
 
 type Pair = { term: string; definition: string; topicId: string };
 
 const ROUND_SIZE = 5;
 
 /** Crea una nueva ronda: 5 pares, con las definiciones barajadas aparte. */
-function makeRound(): { pairs: Pair[]; defs: Pair[] } {
-  const pairs = pickRandom(allMatchPairs(), ROUND_SIZE);
+function makeRound(subject: SubjectId): { pairs: Pair[]; defs: Pair[] } {
+  const pairs = pickRandom(allMatchPairs(subject), ROUND_SIZE);
   return { pairs, defs: shuffle(pairs) };
 }
 
-export default function MatchGame({ onExit }: { onExit: () => void }) {
+export default function MatchGame({
+  subject,
+  onExit,
+}: {
+  subject: SubjectId;
+  onExit: () => void;
+}) {
   const [round, setRound] = useState<{ pairs: Pair[]; defs: Pair[] }>(() =>
-    makeRound()
+    makeRound(subject)
   );
   // Indice del concepto (columna izquierda) seleccionado.
   const [selectedTerm, setSelectedTerm] = useState<number | null>(null);
@@ -33,14 +40,19 @@ export default function MatchGame({ onExit }: { onExit: () => void }) {
   const matchedCount = matched.size;
 
   const newRound = useCallback(() => {
-    setRound(makeRound());
+    setRound(makeRound(subject));
     setSelectedTerm(null);
     setMatched(new Set());
     setWrongDef(null);
     setErrors(0);
     setDone(false);
     setScore(0);
-  }, []);
+  }, [subject]);
+
+  // Si cambia la materia, reinicia con pares de la nueva materia.
+  useEffect(() => {
+    newRound();
+  }, [newRound]);
 
   // Detecta fin de ronda y registra el puntaje una sola vez.
   useEffect(() => {
@@ -48,9 +60,9 @@ export default function MatchGame({ onExit }: { onExit: () => void }) {
       const finalScore = Math.max(50, 600 - errors * 40);
       setScore(finalScore);
       setDone(true);
-      progressActions.recordGame("emparejar", finalScore);
+      progressActions.recordGame(`${subject}:emparejar`, finalScore);
     }
-  }, [matchedCount, totalPairs, errors, done]);
+  }, [matchedCount, totalPairs, errors, done, subject]);
 
   // Limpia el feedback de error tras la animacion.
   useEffect(() => {

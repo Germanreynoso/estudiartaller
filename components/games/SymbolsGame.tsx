@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { progressActions } from "@/lib/store/progress";
 import { shuffle, pickRandom, cn } from "@/lib/utils";
 import { FLOWCHART_SYMBOLS } from "@/lib/curriculum/symbols";
+import type { SubjectId } from "@/lib/curriculum/types";
 
 const TOTAL = FLOWCHART_SYMBOLS.length;
 
@@ -16,7 +17,13 @@ function buildOptions(correctName: string): string[] {
   return shuffle([correctName, ...distractors]);
 }
 
-export default function SymbolsGame({ onExit }: { onExit: () => void }) {
+export default function SymbolsGame({
+  subject,
+  onExit,
+}: {
+  subject: SubjectId;
+  onExit: () => void;
+}) {
   // Mazo barajado de la ronda actual. Cambiar la "seed" rebaraja todo.
   const [seed, setSeed] = useState(0);
   const deck = useMemo(() => shuffle(FLOWCHART_SYMBOLS), [seed]);
@@ -48,7 +55,7 @@ export default function SymbolsGame({ onExit }: { onExit: () => void }) {
       const finalScore = score * 100;
       if (!recorded.current) {
         recorded.current = true;
-        progressActions.recordGame("simbolos", finalScore);
+        progressActions.recordGame(`${subject}:simbolos`, finalScore);
       }
       setDone(true);
       return;

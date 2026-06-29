@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getGroq, GROQ_MODEL, hasGroqKey } from "@/lib/groq";
 import { curriculumOutline, topicDeepContext } from "@/lib/curriculum/context";
+import type { SubjectId } from "@/lib/curriculum/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ interface ChatMessage {
   content: string;
 }
 
-const SYSTEM = `Sos "Tutor TP1", un profesor virtual de la materia "Taller de Programacion I" (1er año de la Tecnicatura Superior en Desarrollo de Software).
+const SYSTEM_TALLER = `Sos "Tutor TP1", un profesor virtual de la materia "Taller de Programacion I" (1er año de la Tecnicatura Superior en Desarrollo de Software).
 Tu objetivo es ayudar al estudiante a entender los temas del 1er parcial TEORICO.
 
 Reglas:
@@ -22,7 +23,25 @@ Reglas:
 - No inventes datos. Si no estas seguro, decilo.
 
 TEMARIO (indice):
-${curriculumOutline()}`;
+${curriculumOutline("taller")}`;
+
+const SYSTEM_MATEMATICAS = `Sos "Tutor de Matematicas", profesor virtual de Matematica para la computacion (logica proposicional y logica de predicados).
+Tu objetivo es ayudar al estudiante a entender los temas del parcial.
+
+Reglas:
+- Responde SIEMPRE en espanol, claro y didactico, con ejemplos cuando ayuden.
+- Cenite al temario de la materia (abajo). Si preguntan algo fuera, redirigi con amabilidad al temario.
+- Usa notacion logica en simbolos Unicode: ¬ ∧ ∨ ⊕ → ↔ ≡ ∀ ∃ ⊢. NO uses LaTeX ni $...$.
+- Las tablas de verdad van como TABLAS Markdown, por ejemplo: | p | q | p ∧ q |.
+- NO uses PSeInt ni pseudocodigo de programacion: esta es una materia de matematica.
+- No inventes datos. Si no estas seguro, decilo.
+
+TEMARIO (indice):
+${curriculumOutline("matematicas")}`;
+
+function systemFor(subject: SubjectId): string {
+  return subject === "matematicas" ? SYSTEM_MATEMATICAS : SYSTEM_TALLER;
+}
 
 export async function POST(req: NextRequest) {
   if (!hasGroqKey()) {
@@ -32,7 +51,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { messages?: ChatMessage[]; topicId?: string };
+  let body: { messages?: ChatMessage[]; topicId?: string; subject?: string };
   try {
     body = await req.json();
   } catch {
@@ -53,7 +72,9 @@ export async function POST(req: NextRequest) {
       content: m.content.slice(0, 4000),
     }));
 
-  let system = SYSTEM;
+  const subject: SubjectId =
+    body.subject === "matematicas" ? "matematicas" : "taller";
+  let system = systemFor(subject);
   if (body.topicId) {
     const ctx = topicDeepContext(body.topicId);
     if (ctx) system += `\n\nCONTEXTO DEL TEMA ACTUAL:\n${ctx}`;

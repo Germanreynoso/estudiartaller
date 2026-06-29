@@ -2,10 +2,15 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { TOPICS, topicById, allQuestions } from "@/lib/curriculum/data";
-import { MODULES } from "@/lib/curriculum/modules";
+import {
+  topicById,
+  allQuestions,
+  topicsBySubject,
+} from "@/lib/curriculum/data";
+import { modulesBySubject } from "@/lib/curriculum/modules";
 import { pickRandom } from "@/lib/utils";
 import { useProgress } from "@/lib/store/progress";
+import { useSubject } from "@/lib/store/subject";
 import {
   buildAdaptiveDeck,
   weakTopics,
@@ -31,6 +36,7 @@ function QuizContent() {
   const topicParam = params.get("topic");
   const modoParam = params.get("modo");
   const progress = useProgress();
+  const subject = useSubject();
 
   const [active, setActive] = useState<ActiveQuiz | null>(null);
   const [round, setRound] = useState(0);
@@ -39,8 +45,8 @@ function QuizContent() {
   const [aiTopic, setAiTopic] = useState<string>("");
   const started = useRef(false);
 
-  const weak = weakTopics(progress, 6);
-  const pending = reviewCount(progress);
+  const weak = weakTopics(progress, 6, subject);
+  const pending = reviewCount(progress, subject);
   const practiced = hasPractice(progress);
 
   function start(a: ActiveQuiz) {
@@ -64,18 +70,18 @@ function QuizContent() {
 
   function startMixed(n: number) {
     start({
-      questions: pickRandom(allQuestions(), n),
-      recordKey: "mixto",
+      questions: pickRandom(allQuestions(subject), n),
+      recordKey: `${subject}:mixto`,
       title: `Quiz mixto (${n})`,
     });
   }
 
   function startAdaptive() {
-    const { questions } = buildAdaptiveDeck(progress, 12);
+    const { questions } = buildAdaptiveDeck(progress, 12, subject);
     if (!questions.length) return;
     start({
       questions,
-      recordKey: "adaptativo",
+      recordKey: `${subject}:adaptativo`,
       title: "Practica adaptativa",
     });
   }
@@ -88,7 +94,7 @@ function QuizContent() {
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topicId: tid || undefined, count: 6 }),
+        body: JSON.stringify({ topicId: tid || undefined, count: 6, subject }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -102,7 +108,7 @@ function QuizContent() {
           topicTitle: t?.title,
           topicId: t?.id,
         })),
-        recordKey: "ia",
+        recordKey: `${subject}:ia`,
         title: t ? `IA · ${t.title}` : "Quiz IA",
       });
     } catch {
@@ -254,7 +260,7 @@ function QuizContent() {
           </div>
           <h2 className="mt-1 font-bold">Quiz mixto</h2>
           <p className="mt-1 text-xs text-muted">
-            Preguntas al azar de todo el temario ({allQuestions().length}{" "}
+            Preguntas al azar de todo el temario ({allQuestions(subject).length}{" "}
             disponibles).
           </p>
           <div className="mt-4 flex gap-2">
@@ -282,7 +288,7 @@ function QuizContent() {
               className="rounded-md border border-border-bright bg-raised px-3 py-2 text-sm outline-none focus:border-term-cyan"
             >
               <option value="">Todo el temario</option>
-              {TOPICS.map((t) => (
+              {topicsBySubject(subject).map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.number}. {t.title}
                 </option>
@@ -305,8 +311,10 @@ function QuizContent() {
           <span className="prompt-comment">quiz por tema</span>
         </h2>
         <div className="space-y-4">
-          {MODULES.map((m) => {
-            const topics = TOPICS.filter((t) => t.module === m.id);
+          {modulesBySubject(subject).map((m) => {
+            const topics = topicsBySubject(subject).filter(
+              (t) => t.module === m.id
+            );
             return (
               <div key={m.id}>
                 <div className="mb-2 flex items-center gap-2 text-xs text-dim">

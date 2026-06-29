@@ -1,19 +1,28 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import type { Topic } from "@/lib/curriculum/types";
-import { TOPICS } from "@/lib/curriculum/data";
+import { topicsBySubject, subjectOfTopic } from "@/lib/curriculum/data";
 import { moduleById } from "@/lib/curriculum/modules";
 import { useProgress, progressActions } from "@/lib/store/progress";
+import { subjectActions } from "@/lib/store/subject";
 
 export default function TopicView({ topic }: { topic: Topic }) {
   const progress = useProgress();
   const isRead = progress.topicsRead.includes(topic.id);
   const mod = moduleById(topic.module);
 
-  const idx = TOPICS.findIndex((t) => t.id === topic.id);
-  const prev = idx > 0 ? TOPICS[idx - 1] : null;
-  const next = idx < TOPICS.length - 1 ? TOPICS[idx + 1] : null;
+  // Navegacion prev/next dentro de la misma materia (no cruza a la otra).
+  const siblings = topicsBySubject(subjectOfTopic(topic));
+  const idx = siblings.findIndex((t) => t.id === topic.id);
+  const prev = idx > 0 ? siblings[idx - 1] : null;
+  const next = idx < siblings.length - 1 ? siblings[idx + 1] : null;
+
+  // Al abrir un tema por enlace directo, sincroniza la materia activa.
+  useEffect(() => {
+    subjectActions.set(subjectOfTopic(topic));
+  }, [topic]);
 
   return (
     <article className="mx-auto max-w-3xl space-y-6">

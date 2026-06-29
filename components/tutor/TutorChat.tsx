@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { topicById } from "@/lib/curriculum/data";
+import { useSubject } from "@/lib/store/subject";
+import type { SubjectId } from "@/lib/curriculum/types";
 import Markdown from "@/components/Markdown";
 
 interface Msg {
@@ -10,17 +12,27 @@ interface Msg {
   content: string;
 }
 
-const SUGGESTIONS = [
-  "Explicame la diferencia entre While-Do y Repeat-Until",
-  "Dame un ejemplo de contador y uno de acumulador",
-  "Cual es la prioridad de los operadores aritmeticos?",
-  "Que diferencia hay entre dato e informacion?",
-];
+const SUGGESTIONS_BY_SUBJECT: Record<SubjectId, string[]> = {
+  taller: [
+    "Explicame la diferencia entre While-Do y Repeat-Until",
+    "Dame un ejemplo de contador y uno de acumulador",
+    "Cual es la prioridad de los operadores aritmeticos?",
+    "Que diferencia hay entre dato e informacion?",
+  ],
+  matematicas: [
+    "Construi la tabla de verdad de p → q",
+    "Que diferencia hay entre tautologia, contradiccion y contingencia?",
+    "Aplica De Morgan a ¬(p ∧ q)",
+    "Como se niega ∀x P(x)?",
+  ],
+};
 
 export default function TutorChat() {
   const params = useSearchParams();
+  const subject = useSubject();
   const topicId = params.get("topic") ?? undefined;
   const topic = topicId ? topicById(topicId) : null;
+  const suggestions = SUGGESTIONS_BY_SUBJECT[subject];
 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -46,7 +58,7 @@ export default function TutorChat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, topicId }),
+        body: JSON.stringify({ messages: history, topicId, subject }),
       });
 
       if (!res.ok || !res.body) {
@@ -123,10 +135,10 @@ export default function TutorChat() {
             </div>
             <p className="mt-2 max-w-sm text-sm text-muted">
               Preguntame lo que quieras del temario. Te respondo con ejemplos y
-              pseudocodigo.
+              explicaciones paso a paso.
             </p>
             <div className="mt-4 flex flex-col gap-2">
-              {SUGGESTIONS.map((s) => (
+              {suggestions.map((s) => (
                 <button
                   key={s}
                   onClick={() => send(s)}

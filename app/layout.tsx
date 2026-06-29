@@ -3,9 +3,9 @@ import type { Metadata, Viewport } from "next";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Taller Prog I · Study Terminal",
+  title: "Study Terminal",
   description:
-    "Web interactiva para estudiar el 1er parcial teorico de Taller de Programacion I: temario, quizzes, juegos, flashcards y tutor con IA.",
+    "Web interactiva para estudiar: temario, quizzes, juegos, flashcards y tutor con IA. Materias: Taller de Programacion I y Matematicas.",
 };
 
 export const viewport: Viewport = {
@@ -28,8 +28,8 @@ export default function RootLayout({
         </main>
         <footer className="border-t border-border px-4 pb-24 pt-6 text-center text-xs text-dim sm:pb-6">
           <span className="prompt-comment">
-            Taller de Programacion I — TS en Desarrollo de Software · hecho para
-            estudiar el 1er parcial teorico
+            Study Terminal — TS en Desarrollo de Software · hecho para estudiar
+            (Taller de Programacion I y Matematicas)
           </span>
         </footer>
       </body>

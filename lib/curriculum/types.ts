@@ -4,6 +4,18 @@
 export type QuestionType = "mc" | "vf" | "fill";
 export type Difficulty = "facil" | "media" | "dificil";
 
+/** Materia de estudio. Cada modulo pertenece a una. */
+export type SubjectId = "taller" | "matematicas";
+
+export interface Subject {
+  id: SubjectId;
+  /** Nombre completo (para titulos). */
+  title: string;
+  /** Nombre corto (para el selector). */
+  short: string;
+  icon: string;
+}
+
 export interface Question {
   id: string;
   type: QuestionType;
@@ -68,6 +80,8 @@ export interface Module {
   title: string;
   icon: string;
   description: string;
+  /** Materia a la que pertenece el modulo. */
+  subject: SubjectId;
 }
 
 export interface FlowchartSymbol {

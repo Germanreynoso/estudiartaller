@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { progressActions } from "@/lib/store/progress";
-import { shuffle, pickRandom, cn } from "@/lib/utils";
+import { pickRandom, cn } from "@/lib/utils";
 import { allTerms } from "@/lib/curriculum/data";
+import type { SubjectId } from "@/lib/curriculum/types";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const MAX_ERRORS = 6;
@@ -72,8 +73,8 @@ const GALLOWS: string[] = [
 ];
 
 /** Toma un termino jugable al azar (largo 3..14), distinto del actual si se puede. */
-function pickTerm(exclude?: string): Term | null {
-  const playable = allTerms().filter(
+function pickTerm(subject: SubjectId, exclude?: string): Term | null {
+  const playable = allTerms(subject).filter(
     (t) => t.term.length >= 3 && t.term.length <= 14
   );
   if (playable.length === 0) return null;
@@ -84,7 +85,13 @@ function pickTerm(exclude?: string): Term | null {
   return pickRandom(pool.length ? pool : playable, 1)[0] ?? null;
 }
 
-export default function HangmanGame({ onExit }: { onExit: () => void }) {
+export default function HangmanGame({
+  subject,
+  onExit,
+}: {
+  subject: SubjectId;
+  onExit: () => void;
+}) {
   const [current, setCurrent] = useState<Term | null>(null);
   const [guessed, setGuessed] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState(0);
@@ -109,11 +116,14 @@ export default function HangmanGame({ onExit }: { onExit: () => void }) {
       : 0;
 
   // ---------- Inicializacion / nueva palabra ----------
-  const newWord = useCallback((excludeTerm?: string) => {
-    setCurrent(pickTerm(excludeTerm));
-    setGuessed(new Set());
-    setErrors(0);
-  }, []);
+  const newWord = useCallback(
+    (excludeTerm?: string) => {
+      setCurrent(pickTerm(subject, excludeTerm));
+      setGuessed(new Set());
+      setErrors(0);
+    },
+    [subject]
+  );
 
   useEffect(() => {
     newWord();
@@ -122,7 +132,7 @@ export default function HangmanGame({ onExit }: { onExit: () => void }) {
   // ---------- Registrar score al ganar (una sola vez por palabra) ----------
   useEffect(() => {
     if (status === "won") {
-      progressActions.recordGame("ahorcado", score);
+      progressActions.recordGame(`${subject}:ahorcado`, score);
     }
     // Solo dispara cuando la palabra cambia de estado a ganada.
     // eslint-disable-next-line react-hooks/exhaustive-deps

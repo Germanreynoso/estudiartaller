@@ -1,4 +1,5 @@
-import { TOPICS, allQuestions } from "@/lib/curriculum/data";
+import { TOPICS, allQuestions, topicsBySubject } from "@/lib/curriculum/data";
+import type { SubjectId } from "@/lib/curriculum/types";
 import type { ProgressState, QuizItem } from "@/lib/store/progress";
 
 // ============================================================
@@ -27,9 +28,13 @@ export interface AdaptiveDeck {
 }
 
 /** Arma un mazo priorizando errores, cajas bajas y temas flojos. */
-export function buildAdaptiveDeck(progress: ProgressState, n = 12): AdaptiveDeck {
+export function buildAdaptiveDeck(
+  progress: ProgressState,
+  n = 12,
+  subject?: SubjectId
+): AdaptiveDeck {
   const now = Date.now();
-  const scored = allQuestions().map((q) => {
+  const scored = allQuestions(subject).map((q) => {
     const item = progress.quizItems[itemKey(q.topicId, q.id)];
     return { q, item, p: priority(item, now) + Math.random() * 0.9 };
   });
@@ -52,8 +57,12 @@ export interface TopicMastery {
   wrong: number; // errores acumulados
 }
 
-export function topicMastery(progress: ProgressState): TopicMastery[] {
-  return TOPICS.map((t) => {
+export function topicMastery(
+  progress: ProgressState,
+  subject?: SubjectId
+): TopicMastery[] {
+  const list = subject ? topicsBySubject(subject) : TOPICS;
+  return list.map((t) => {
     let seen = 0;
     let sumBox = 0;
     let wrong = 0;
@@ -81,18 +90,33 @@ export function topicMastery(progress: ProgressState): TopicMastery[] {
 }
 
 /** Temas practicados ordenados de menor a mayor dominio (los mas flojos primero). */
-export function weakTopics(progress: ProgressState, limit = 6): TopicMastery[] {
-  return topicMastery(progress)
+export function weakTopics(
+  progress: ProgressState,
+  limit = 6,
+  subject?: SubjectId
+): TopicMastery[] {
+  return topicMastery(progress, subject)
     .filter((t) => t.seen > 0)
     .sort((a, b) => a.mastery - b.mastery || b.wrong - a.wrong)
     .slice(0, limit);
 }
 
 /** Cantidad de preguntas pendientes de reforzar (falladas o en cajas bajas). */
-export function reviewCount(progress: ProgressState): number {
-  return Object.values(progress.quizItems).filter(
-    (it) => it.wrong > 0 || it.box <= 2
-  ).length;
+export function reviewCount(
+  progress: ProgressState,
+  subject?: SubjectId
+): number {
+  // Las claves de quizItems son `${topicId}:${questionId}`.
+  const ids = subject
+    ? new Set(topicsBySubject(subject).map((t) => t.id))
+    : null;
+  return Object.entries(progress.quizItems).filter(([key, it]) => {
+    if (ids) {
+      const topicId = key.slice(0, key.lastIndexOf(":"));
+      if (!ids.has(topicId)) return false;
+    }
+    return it.wrong > 0 || it.box <= 2;
+  }).length;
 }
 
 export function hasPractice(progress: ProgressState): boolean {

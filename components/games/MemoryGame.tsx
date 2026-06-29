@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { progressActions } from "@/lib/store/progress";
 import { shuffle, pickRandom, cn } from "@/lib/utils";
 import { allMatchPairs } from "@/lib/curriculum/data";
+import type { SubjectId } from "@/lib/curriculum/types";
 
 const PAIR_COUNT = 6; // 6 pares => 12 cartas
 const FLIP_BACK_MS = 850;
@@ -19,8 +20,8 @@ interface Card {
   topicId: string;
 }
 
-function buildDeck(): Card[] {
-  const pairs = pickRandom(allMatchPairs(), PAIR_COUNT);
+function buildDeck(subject: SubjectId): Card[] {
+  const pairs = pickRandom(allMatchPairs(subject), PAIR_COUNT);
   const cards: Card[] = [];
   pairs.forEach((p, i) => {
     cards.push({
@@ -52,7 +53,13 @@ function fmtTime(secs: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function MemoryGame({ onExit }: { onExit: () => void }) {
+export default function MemoryGame({
+  subject,
+  onExit,
+}: {
+  subject: SubjectId;
+  onExit: () => void;
+}) {
   const [deck, setDeck] = useState<Card[]>([]);
   const [flipped, setFlipped] = useState<number[]>([]); // indices volteados (max 2)
   const [matched, setMatched] = useState<Set<number>>(new Set()); // pairIds resueltos
@@ -67,12 +74,12 @@ export default function MemoryGame({ onExit }: { onExit: () => void }) {
 
   // Mazo inicial (lazy initializer en efecto: es client component).
   useEffect(() => {
-    setDeck(buildDeck());
-  }, []);
+    setDeck(buildDeck(subject));
+  }, [subject]);
 
   const newGame = useCallback(() => {
     if (flipTimer.current) clearTimeout(flipTimer.current);
-    setDeck(buildDeck());
+    setDeck(buildDeck(subject));
     setFlipped([]);
     setMatched(new Set());
     setMoves(0);
@@ -81,7 +88,7 @@ export default function MemoryGame({ onExit }: { onExit: () => void }) {
     setStarted(false);
     setWon(false);
     recorded.current = false;
-  }, []);
+  }, [subject]);
 
   const totalPairs = deck.length / 2;
   const isWon = totalPairs > 0 && matched.size === totalPairs;
@@ -100,10 +107,10 @@ export default function MemoryGame({ onExit }: { onExit: () => void }) {
       setWon(true);
       if (!recorded.current) {
         recorded.current = true;
-        progressActions.recordGame("memoria", score);
+        progressActions.recordGame(`${subject}:memoria`, score);
       }
     }
-  }, [isWon, won, score]);
+  }, [isWon, won, score, subject]);
 
   // Limpieza del timer de flip-back al desmontar.
   useEffect(() => {

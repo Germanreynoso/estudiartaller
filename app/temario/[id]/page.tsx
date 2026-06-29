@@ -1,4 +1,5 @@
-import { TOPICS, topicById } from "@/lib/curriculum/data";
+import { TOPICS, topicById, subjectOfTopic } from "@/lib/curriculum/data";
+import { subjectById } from "@/lib/curriculum/subjects";
 import { notFound } from "next/navigation";
 import TopicView from "@/components/TopicView";
 
@@ -13,11 +14,9 @@ export async function generateMetadata({
 }) {
   const { id } = await params;
   const topic = topicById(id);
-  return {
-    title: topic
-      ? `${topic.title} · Taller Prog I`
-      : "Tema no encontrado · Taller Prog I",
-  };
+  if (!topic) return { title: "Tema no encontrado · Study Terminal" };
+  const subject = subjectById(subjectOfTopic(topic));
+  return { title: `${topic.title} · ${subject?.short ?? "Study Terminal"}` };
 }
 
 export default async function TopicPage({

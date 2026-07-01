@@ -25,6 +25,12 @@ const SUGGESTIONS_BY_SUBJECT: Record<SubjectId, string[]> = {
     "Aplica De Morgan a ¬(p ∧ q)",
     "Como se niega ∀x P(x)?",
   ],
+  informatica: [
+    "Que diferencia hay entre dato e informacion?",
+    "Cuales son los elementos clave de las TIC?",
+    "Que caracteristicas tiene la computacion en la nube?",
+    "Por que es importante la alfabetizacion digital?",
+  ],
 };
 
 export default function TutorChat() {

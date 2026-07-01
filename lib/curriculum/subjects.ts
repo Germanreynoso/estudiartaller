@@ -18,6 +18,12 @@ export const SUBJECTS: Subject[] = [
     short: "Mate",
     icon: "∑",
   },
+  {
+    id: "informatica",
+    title: "Informatica",
+    short: "Info",
+    icon: "◈",
+  },
 ];
 
 export function subjectById(id: string): Subject | undefined {

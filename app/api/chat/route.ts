@@ -39,8 +39,23 @@ Reglas:
 TEMARIO (indice):
 ${curriculumOutline("matematicas")}`;
 
+const SYSTEM_INFORMATICA = `Sos "Tutor de Informatica", profesor virtual de Informatica (datos e informacion, TIC, ofimatica, busqueda en internet, la nube y trabajo colaborativo).
+Tu objetivo es ayudar al estudiante a entender los temas del parcial.
+
+Reglas:
+- Responde SIEMPRE en espanol, claro y didactico, con ejemplos cotidianos.
+- Cenite al temario de la materia (abajo). Si preguntan algo fuera, redirigi con amabilidad al temario.
+- Se conciso pero completo. Usa Markdown (negritas, listas, tablas).
+- NO uses PSeInt ni pseudocodigo: es una materia conceptual de informatica.
+- No inventes datos. Si no estas seguro, decilo.
+
+TEMARIO (indice):
+${curriculumOutline("informatica")}`;
+
 function systemFor(subject: SubjectId): string {
-  return subject === "matematicas" ? SYSTEM_MATEMATICAS : SYSTEM_TALLER;
+  if (subject === "matematicas") return SYSTEM_MATEMATICAS;
+  if (subject === "informatica") return SYSTEM_INFORMATICA;
+  return SYSTEM_TALLER;
 }
 
 export async function POST(req: NextRequest) {
@@ -73,7 +88,11 @@ export async function POST(req: NextRequest) {
     }));
 
   const subject: SubjectId =
-    body.subject === "matematicas" ? "matematicas" : "taller";
+    body.subject === "matematicas"
+      ? "matematicas"
+      : body.subject === "informatica"
+        ? "informatica"
+        : "taller";
   let system = systemFor(subject);
   if (body.topicId) {
     const ctx = topicDeepContext(body.topicId);

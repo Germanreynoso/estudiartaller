@@ -68,6 +68,24 @@ export const MODULES: Module[] = [
       "Predicados, cuantificadores universal y existencial, y negacion de cuantificadores.",
     subject: "matematicas",
   },
+
+  // ---------- Informatica ----------
+  {
+    id: "inf-fundamentos",
+    title: "Fundamentos",
+    icon: "❖",
+    description:
+      "Datos e informacion, las TIC y sus elementos, y la alfabetizacion digital.",
+    subject: "informatica",
+  },
+  {
+    id: "inf-herramientas",
+    title: "Herramientas & Servicios",
+    icon: "⚙",
+    description:
+      "Herramientas ofimaticas, busqueda en internet, la nube y trabajo colaborativo.",
+    subject: "informatica",
+  },
 ];
 
 export function moduleById(id: string): Module | undefined {

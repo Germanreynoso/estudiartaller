@@ -34,10 +34,20 @@ import matEquivalencias from "./topics/mat-equivalencias";
 import matInferencia from "./topics/mat-inferencia";
 import matPredicados from "./topics/mat-predicados";
 
+// Informatica.
+import infDatosInformacion from "./topics/inf-datos-informacion";
+import infTic from "./topics/inf-tic";
+import infAlfabetizacionDigital from "./topics/inf-alfabetizacion-digital";
+import infOfimatica from "./topics/inf-ofimatica";
+import infBusquedaInternet from "./topics/inf-busqueda-internet";
+import infNube from "./topics/inf-nube";
+import infTrabajoColaborativo from "./topics/inf-trabajo-colaborativo";
+
 // Orden de las materias en listados globales (cada una se numera 1..n por separado).
 const SUBJECT_RANK: Record<SubjectId, number> = {
   taller: 0,
   matematicas: 1,
+  informatica: 2,
 };
 
 /** Materia a la que pertenece un tema (derivada de su modulo). */
@@ -76,6 +86,14 @@ export const TOPICS: Topic[] = [
   matEquivalencias,
   matInferencia,
   matPredicados,
+  // Informatica
+  infDatosInformacion,
+  infTic,
+  infAlfabetizacionDigital,
+  infOfimatica,
+  infBusquedaInternet,
+  infNube,
+  infTrabajoColaborativo,
 ].sort(
   (a, b) =>
     SUBJECT_RANK[subjectOfTopic(a)] - SUBJECT_RANK[subjectOfTopic(b)] ||

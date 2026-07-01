@@ -28,7 +28,12 @@ export default function Nav() {
   const progress = useProgress();
   const { level } = levelFromXp(progress.xp);
   const subject = useSubject();
-  const host = subject === "matematicas" ? "mate@study" : "tp1@study";
+  const host =
+    subject === "matematicas"
+      ? "mate@study"
+      : subject === "informatica"
+        ? "info@study"
+        : "tp1@study";
   const links =
     subject === "matematicas" ? [...LINKS, PRACTICA_LINK] : LINKS;
 

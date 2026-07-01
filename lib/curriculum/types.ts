@@ -5,7 +5,7 @@ export type QuestionType = "mc" | "vf" | "fill";
 export type Difficulty = "facil" | "media" | "dificil";
 
 /** Materia de estudio. Cada modulo pertenece a una. */
-export type SubjectId = "taller" | "matematicas";
+export type SubjectId = "taller" | "matematicas" | "informatica";
 
 export interface Subject {
   id: SubjectId;

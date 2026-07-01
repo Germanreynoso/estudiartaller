@@ -34,7 +34,11 @@ export async function POST(req: NextRequest) {
 
   const count = Math.min(Math.max(body.count ?? 5, 1), 8);
   const subject: SubjectId =
-    body.subject === "matematicas" ? "matematicas" : "taller";
+    body.subject === "matematicas"
+      ? "matematicas"
+      : body.subject === "informatica"
+        ? "informatica"
+        : "taller";
   const topic = body.topicId ? topicById(body.topicId) : null;
 
   const focus = topic
@@ -46,7 +50,9 @@ export async function POST(req: NextRequest) {
   const domain =
     subject === "matematicas"
       ? `"Matematica para la computacion" (logica proposicional y de predicados). Usa notacion logica Unicode (¬ ∧ ∨ ⊕ → ↔ ≡ ∀ ∃) cuando corresponda; NO uses LaTeX. Las tablas de verdad describilas en texto plano dentro del enunciado.`
-      : `"Taller de Programacion I" (1er año, tecnicatura en desarrollo de software).`;
+      : subject === "informatica"
+        ? `"Informatica" (datos e informacion, TIC, herramientas ofimaticas, busqueda en internet, computacion en la nube y trabajo colaborativo). Preguntas conceptuales claras y univocas.`
+        : `"Taller de Programacion I" (1er año, tecnicatura en desarrollo de software).`;
 
   const system = `Sos generador de preguntas de examen para ${domain}
 Devolves EXCLUSIVAMENTE un objeto JSON valido con esta forma:
